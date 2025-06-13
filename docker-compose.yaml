@@ -1,0 +1,81 @@
+services:
+  orders:
+    build: ./orders-service
+    hostname: orders
+    ports:
+      - "8080:8080"
+    env_file:
+      - "orders-service/.env"
+#    volumes:
+#      - orders-data:/var/lib/docker/volumes/orders-data
+    depends_on:
+      orders-db:
+        condition: service_healthy
+        restart: true
+
+  orders-db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: orders-db
+      PGDATA: /var/lib/postgresql/data/orders-pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - orders-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+      timeout: 3s
+      retries: 3
+
+  payments:
+    build: ./payments-service
+    hostname: payments
+    ports:
+      - "8081:8080"
+    env_file:
+      - "payments-service/.env"
+#    volumes:
+#      - word-cloud-images-data:/var/lib/docker/volumes/word-cloud-images-data
+    depends_on:
+      payments-db:
+        condition: service_healthy
+        restart: true
+#      file-storage:
+#        condition: service_started
+#        restart: true
+  payments-db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: payments-db
+      PGDATA: /var/lib/postgresql/data/payments-pgdata
+    ports:
+      - "5430:5432"
+    volumes:
+      - payments-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+      timeout: 3s
+      retries: 3
+
+  api-gateway:
+    build: ./api-gateway
+    hostname: api-gateway
+    ports:
+      - "8000:8000"
+    env_file:
+      - "api-gateway/.env"
+    depends_on:
+      - orders
+      - payments
+
+volumes:
+  orders-pgdata:
+    driver: local
+  payments-pgdata:
+    driver: local
