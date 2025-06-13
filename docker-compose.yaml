@@ -1,4 +1,34 @@
 services:
+  zookeeper:
+    image: bitnami/zookeeper:3.8
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/bitnami/zookeeper
+
+  kafka:
+    image: bitnami/kafka:3.4
+    environment:
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/bitnami/kafka
+
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "localhost:9092"]
+      interval: 3s
+      timeout: 10s
+      retries: 3
+
   orders:
     build: ./orders-service
     hostname: orders
@@ -6,9 +36,10 @@ services:
       - "8080:8080"
     env_file:
       - "orders-service/.env"
-#    volumes:
-#      - orders-data:/var/lib/docker/volumes/orders-data
+      - "kafka.env"
     depends_on:
+      kafka:
+        condition: service_healthy
       orders-db:
         condition: service_healthy
         restart: true
@@ -37,15 +68,13 @@ services:
       - "8081:8080"
     env_file:
       - "payments-service/.env"
-#    volumes:
-#      - word-cloud-images-data:/var/lib/docker/volumes/word-cloud-images-data
+      - "kafka.env"
     depends_on:
+      kafka:
+        condition: service_healthy
       payments-db:
         condition: service_healthy
         restart: true
-#      file-storage:
-#        condition: service_started
-#        restart: true
   payments-db:
     image: postgres:13
     environment:
@@ -53,6 +82,7 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: payments-db
       PGDATA: /var/lib/postgresql/data/payments-pgdata
+
     ports:
       - "5430:5432"
     volumes:
@@ -75,7 +105,9 @@ services:
       - payments
 
 volumes:
+  zookeeper_data:
+    driver: local
+  kafka_data:
+    driver: local
   orders-pgdata:
-    driver: local
   payments-pgdata:
-    driver: local

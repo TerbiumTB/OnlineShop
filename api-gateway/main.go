@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	lg := log.New(os.Stdout, "File storage ", log.LstdFlags)
+	lg := log.New(os.Stdout, "API Gateway ", log.LstdFlags)
 
-	lg.Println("Starting api gateway")
+	lg.Println("Starting API Gateway")
 }
