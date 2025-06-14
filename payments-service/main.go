@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"github.com/segmentio/kafka-go"
-	//"github.com/gorilla/mux"
 	"log"
 	"os"
-	//	"os/signal"
-	//	"time"
+	"payments/application"
+	"payments/infrastructure/inoutbox"
+	"payments/infrastructure/mq"
+	"payments/pkg/postgres"
+	"time"
 )
 
 func main() {
@@ -15,28 +16,24 @@ func main() {
 
 	lg.Println("Starting payments server")
 
-	kafkaURL := os.Getenv("KAFKA_BROKER")
-	topicOrders := os.Getenv("KAFKA_ORDERS_TOPIC")
-	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:  []string{kafkaURL},
-		Topic:    topicOrders,
-		GroupID:  "payments",
-		MinBytes: 10e2,
-		MaxBytes: 10e6,
-	})
-	defer r.Close()
+	db, err := postgres.Init()
+	if err != nil {
+		lg.Fatal(err)
+	}
+	//s, err := storage.NewOrderDB(db)
+	i, err := inoutbox.NewInbox(db)
 
-	lg.Printf("Reading from kafka")
+	if err != nil {
+		lg.Fatal(err)
+	}
+
+	k := mq.NewKafka()
+	defer k.Close()
+
+	inbox := application.NewInboxWorker(k, i, lg)
+
+	inbox.Start(context.Background(), 2*time.Second)
 
 	for {
-		msg, err := r.ReadMessage(context.Background())
-
-		if err != nil {
-			log.Printf("Error reading message: %v", err)
-		}
-
-		log.Printf("Message received: %s", msg.Value)
-
 	}
-	//server.StartServer(":8080", http.DefaultServeMux, lg)
 }

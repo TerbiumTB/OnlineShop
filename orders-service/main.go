@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
+	"orders/application"
+	"orders/infrastructure/inoutbox"
+	"orders/infrastructure/mq"
+	"orders/infrastructure/storage"
+	"orders/infrastructure/trx"
+	"orders/pkg/postgres"
 	"time"
 
 	//"github.com/gorilla/mux"
@@ -21,28 +25,59 @@ type Event struct {
 func main() {
 	lg := log.New(os.Stdout, "Orders ", log.LstdFlags)
 
-	lg.Println("Starting orders server")
-
-	kafkaURL := os.Getenv("KAFKA_BROKER")
-	topicOrders := os.Getenv("KAFKA_ORDERS_TOPIC")
-
-	lg.Println(os.Environ())
-	p := kafka.Writer{
-		Addr:     kafka.TCP(kafkaURL),
-		Topic:    topicOrders,
-		Balancer: &kafka.LeastBytes{},
+	db, err := postgres.Init()
+	if err != nil {
+		lg.Fatal(err)
 	}
-	defer p.Close()
+	s, err := storage.NewOrderDB(db)
+	o, err := inoutbox.NewOutbox(db)
+	m := trx.NewDBManager(db)
 
-	for i := 0; i < 100; i += 1 {
-		msg := fmt.Sprintf("Order %d", i)
-		err := p.WriteMessages(context.Background(), kafka.Message{
-			Value: []byte(msg),
-		})
+	if err != nil {
+		lg.Fatal(err)
+	}
+
+	k := mq.NewKafka()
+	defer k.Close()
+
+	service := application.NewService(s, o, m)
+	outbox := application.NewOutboxWorker(k, o, lg)
+
+	outbox.Start(context.Background(), 3*time.Second)
+
+	//order := models.Order{}
+	for i := 0; i < 10; i++ {
+		//order := models.NewOrder(uuid.New(), float64(i)*12+100, "Labubu")
+		err = service.Add(uuid.New().String(), float64(i)*12+100, "Labubu")
 		if err != nil {
-			lg.Fatal(err)
+			lg.Println(err)
 		}
-		time.Sleep(3 * time.Second)
+		time.Sleep(6 * time.Second)
 	}
+	//db, err := storage.NewOrderDB(nil)
+	//application.Service{db}
+
+	//lg.Println("Starting orders server")
+	//
+	//kafkaURL := os.Getenv("KAFKA_BROKER")
+	//topicOrders := os.Getenv("KAFKA_ORDERS_TOPIC")
+	//
+	//p := kafka.Writer{
+	//	Addr:     kafka.TCP(kafkaURL),
+	//	Topic:    topicOrders,
+	//	Balancer: &kafka.LeastBytes{},
+	//}
+	//defer p.Close()
+	//
+	//for i := 0; i < 100; i += 1 {
+	//	msg := fmt.Sprintf("Order %d", i)
+	//	err := p.WriteMessages(context.Background(), kafka.Message{
+	//		Value: []byte(msg),
+	//	})
+	//	if err != nil {
+	//		lg.Fatal(err)
+	//	}
+	//	time.Sleep(3 * time.Second)
+	//}
 
 }
