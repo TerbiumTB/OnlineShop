@@ -1,0 +1,99 @@
+basePath: /
+definitions:
+  handlers.request:
+    properties:
+      amount:
+        type: number
+      descr:
+        type: string
+    type: object
+  model.Order:
+    properties:
+      descr:
+        type: string
+      id:
+        type: string
+      price:
+        type: number
+      status:
+        $ref: '#/definitions/model.Status'
+      user_id:
+        type: string
+    type: object
+  model.Status:
+    enum:
+    - CREATED
+    type: string
+    x-enum-varnames:
+    - CREATED
+host: localhost:8080
+info:
+  contact: {}
+  title: Orders
+  version: "1.0"
+paths:
+  /order:
+    get:
+      description: Получить все заказы
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о заказе
+          schema:
+            items:
+              $ref: '#/definitions/model.Order'
+            type: array
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      tags:
+      - Инфо
+  /order/{id}:
+    get:
+      description: Получить заказ по ID
+      parameters:
+      - description: ID заказа
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о заказе
+          schema:
+            $ref: '#/definitions/model.Order'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            type: string
+      tags:
+      - Инфо
+  /order/create/{user_id}:
+    post:
+      description: Оформляет заказ
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: Детали заказа
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.request'
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      tags:
+      - Загрузка
+swagger: "2.0"

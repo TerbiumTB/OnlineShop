@@ -1,3 +1,6 @@
+construct:
+	docker-compose build --no-cache
+
 build:
 	docker-compose build
 
@@ -16,4 +19,4 @@ start: | build run
 
 restart: | stop start
 
-fresh: | clean start
+fresh: | clean construct

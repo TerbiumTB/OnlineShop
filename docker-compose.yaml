@@ -30,12 +30,12 @@ services:
       retries: 3
 
   orders:
-    build: ./orders-service
+    build: orders
     hostname: orders
     ports:
       - "8080:8080"
     env_file:
-      - "orders-service/.env"
+      - "orders/.env"
       - "kafka.env"
     depends_on:
       kafka:
@@ -62,12 +62,12 @@ services:
       retries: 3
 
   payments:
-    build: ./payments-service
+    build: payments
     hostname: payments
     ports:
       - "8081:8080"
     env_file:
-      - "payments-service/.env"
+      - "payments/.env"
       - "kafka.env"
     depends_on:
       kafka:
