@@ -40,7 +40,7 @@ func (s *OrderService) newOrderEvent(order *model.Order) *model.Event {
 	}
 
 	payload, _ := json.Marshal(op)
-	return model.NewEvent("NewOrder", payload)
+	return model.NewEventWithID(order.ID, payload)
 }
 
 func (s *OrderService) Add(userID string, price float64, descr string) (err error) {

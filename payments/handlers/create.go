@@ -6,24 +6,23 @@ import (
 	"payments/pkg/json"
 )
 
-type createAccountRequest struct {
-	FullName string  `json:"full_name"`
-	Balance  float64 `json:"balance"`
-	//Descr  string  `json:"descr"`
-}
+type createReq struct {
+	FullName string  `json:"full_name" example:"John Doe"`
+	Balance  float64 `json:"balance" example:"1000.00"`
+} //@name CreateAccountRequest
 
 // @Title Create Account
 // @Description создает аккаунта
-// @Tags Аккаунты
+// @Tags Accounts Manage
 // @Param   user_id  path  string  true  "ID пользователя"
-// @Param   balance    body  createAccountRequest true  "Начальный счет аккаунта"
+// @Param   balance    body  createReq true  "Начальный счет аккаунта"
 // @Success 200
 // @Failure 400
 // @Failure 500
 // @Router  /account/create/{user_id} [post]
 func (h *Handler) CreateAccount(w http.ResponseWriter, r *http.Request) {
 	userID := mux.Vars(r)["user_id"]
-	req := &createAccountRequest{}
+	req := &createReq{}
 	err := json.FromJSON(req, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -37,5 +36,5 @@ func (h *Handler) CreateAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	//w.WriteHeader(http.StatusOK)
 }

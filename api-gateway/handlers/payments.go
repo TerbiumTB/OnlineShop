@@ -7,13 +7,16 @@ import (
 	"os"
 )
 
-var paymentsProxy *httputil.ReverseProxy
-
-func init() {
-	paymentsURL, _ := url.Parse(os.Getenv("PAYMENTS_URL"))
-	paymentsProxy = httputil.NewSingleHostReverseProxy(paymentsURL)
+type PaymentsHandler struct {
+	proxy *httputil.ReverseProxy
 }
 
-func PaymentsHandler(wr http.ResponseWriter, r *http.Request) {
-	paymentsProxy.ServeHTTP(wr, r)
+func NewPaymentsHandler() *PaymentsHandler {
+	paymentsURL, _ := url.Parse(os.Getenv("PAYMENTS_URL"))
+	paymentsProxy := httputil.NewSingleHostReverseProxy(paymentsURL)
+	return &PaymentsHandler{paymentsProxy}
+}
+
+func (h *PaymentsHandler) ServeHTTP(wr http.ResponseWriter, r *http.Request) {
+	h.proxy.ServeHTTP(wr, r)
 }

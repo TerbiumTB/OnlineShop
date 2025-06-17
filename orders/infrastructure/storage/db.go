@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
+	"log"
 	"orders/infrastructure/trx"
 	"orders/models"
 )
@@ -75,6 +76,7 @@ func (odb *OrderDB) All() (f []*model.Order, err error) {
 }
 
 func (odb *OrderDB) UpdateStatus(id uuid.UUID, status model.Status) (err error) {
-	_, err = odb.db.Exec(updateStatusQuery, id, status)
+	res, err := odb.db.Exec(updateStatusQuery, id, status)
+	log.Println(res)
 	return
 }

@@ -15,33 +15,11 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/account": {
-            "get": {
-                "description": "Возвращает все счета",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Аккаунты"
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Account"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/account/create/{user_id}": {
             "post": {
                 "description": "создает аккаунта",
                 "tags": [
-                    "Аккаунты"
+                    "Accounts Manage"
                 ],
                 "parameters": [
                     {
@@ -57,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.createAccountRequest"
+                            "$ref": "#/definitions/CreateAccountRequest"
                         }
                     }
                 ],
@@ -74,51 +52,36 @@ const docTemplate = `{
                 }
             }
         },
-        "/account/update/{user_id}": {
-            "patch": {
-                "description": "изменить баланс счета",
+        "/account/get": {
+            "get": {
+                "description": "Возвращает все счета",
+                "produces": [
+                    "application/json"
+                ],
                 "tags": [
-                    "Аккаунты"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID пользователя",
-                        "name": "user_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Изменение счета",
-                        "name": "update_request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handler.updateAccountRequest"
-                        }
-                    }
+                    "Accounts Info"
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Account"
+                            }
+                        }
                     }
                 }
             }
         },
-        "/account/{user_id}": {
+        "/account/get/{user_id}": {
             "get": {
                 "description": "Получить счет по ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Инфо"
+                    "Accounts Info"
                 ],
                 "parameters": [
                     {
@@ -144,25 +107,65 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/account/update/{user_id}": {
+            "patch": {
+                "description": "изменить баланс счета",
+                "tags": [
+                    "Accounts Manage"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID пользователя",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Изменение счета",
+                        "name": "update_request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/UpdateAccountRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "handler.createAccountRequest": {
+        "CreateAccountRequest": {
             "type": "object",
             "properties": {
                 "balance": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 1000
                 },
                 "full_name": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "John Doe"
                 }
             }
         },
-        "handler.updateAccountRequest": {
+        "UpdateAccountRequest": {
             "type": "object",
             "properties": {
                 "amount": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 100
                 }
             }
         },
@@ -187,7 +190,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8081",
-	BasePath:         "/",
+	BasePath:         "/payment/",
 	Schemes:          []string{},
 	Title:            "Payments",
 	Description:      "",

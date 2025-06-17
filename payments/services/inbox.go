@@ -30,18 +30,15 @@ type orderEvent struct {
 
 func (w *InboxWorker) try() (ok bool) {
 	event, err := w.broker.Receive()
-	w.lg.Println("received event:", event)
 
 	if err != nil {
 		return false
 	}
 
-	w.lg.Println("adding event...")
 	err = w.inbox.Add(event)
 	if err != nil {
 		return false
 	}
-	w.lg.Println("compliting event...")
 	return w.broker.Register() == nil
 }
 
@@ -54,13 +51,13 @@ func (w *InboxWorker) Start(ctx context.Context, period time.Duration) {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				//noop
+				if w.try() {
+					w.lg.Println("added event to inbox")
+				}
 			}
-			if w.try() {
-				w.lg.Println("added event to inbox")
-			} else {
-				w.lg.Println("tried")
-			}
+			//else {
+			//	w.lg.Println("tried")
+			//}
 		}
 	}()
 }

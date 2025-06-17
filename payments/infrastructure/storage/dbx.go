@@ -1,10 +1,9 @@
 package storage
 
 import (
-	"fmt"
+	"errors"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"log"
 	"payments/infrastructure/trx"
 	"payments/models"
 )
@@ -50,10 +49,10 @@ func (adb *AccountDB) Get(id uuid.UUID) (account *model.Account, err error) {
 	return
 }
 
-func (adb *AccountDB) AddWith(trx trx.Trx, account *model.Account) (err error) {
-	tx, ok := trx.(*sqlx.Tx)
+func (adb *AccountDB) AddWith(t trx.Transaction, account *model.Account) (err error) {
+	tx, ok := t.(*sqlx.Tx)
 	if !ok {
-		return fmt.Errorf("transaction is not a sqlx.Tx")
+		return trx.SqlxError
 	}
 
 	_, err = tx.NamedExec(addQuery, account)
@@ -80,13 +79,19 @@ func (adb *AccountDB) Update(id uuid.UUID, amount float64) (err error) {
 	return
 }
 
-func (adb *AccountDB) PayWith(trx trx.Trx, payment *model.Payment) (err error) {
-	tx, ok := trx.(*sqlx.Tx)
+func (adb *AccountDB) PayWith(t trx.Transaction, payment *model.Payment) (err error) {
+	tx, ok := t.(*sqlx.Tx)
 	if !ok {
-		return fmt.Errorf("transaction is not a sqlx.Tx")
+		return trx.SqlxError
 	}
 
 	res, err := tx.NamedExec(paymentQuery, payment)
-	log.Println(res)
+	if err != nil {
+		return err
+	}
+	if rows, err := res.RowsAffected(); err != nil || rows == 0 {
+		return errors.New("couldn't proceed payment")
+	}
+
 	return
 }

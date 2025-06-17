@@ -1,7 +1,6 @@
 package inoutbox
 
 import (
-	"fmt"
 	"github.com/jmoiron/sqlx"
 	"payments/infrastructure/trx"
 	"payments/models"
@@ -10,15 +9,15 @@ import (
 type Inboxer interface {
 	Add(*model.Event) error
 	Get() (*model.Event, error)
-	CompleteWith(trx.Trx, *model.Event) error
+	CompleteWith(trx.Transaction, *model.Event) error
 }
 
 type Inbox struct {
 	db *sqlx.DB
 }
 
-func NewInbox(db *sqlx.DB) (*Inbox, error) {
-	_, err := db.Exec(`
+const (
+	createQuery = `
 		CREATE TABLE IF NOT EXISTS inbox (
 			id UUID PRIMARY KEY,
 			created_at TIMESTAMP,
@@ -27,7 +26,14 @@ func NewInbox(db *sqlx.DB) (*Inbox, error) {
 			payload JSONB
 		);
 		
-	`)
+	`
+	addQuery      = `INSERT INTO inbox (id, created_at, processed, type, payload) VALUES (:id, :created_at, :processed, :type, :payload)`
+	getQuery      = `SELECT * FROM inbox WHERE processed = false LIMIT 1`
+	completeQuery = `UPDATE inbox SET processed = true WHERE id = :id`
+)
+
+func NewInbox(db *sqlx.DB) (*Inbox, error) {
+	_, err := db.Exec(createQuery)
 
 	if err != nil {
 		return nil, err
@@ -37,23 +43,23 @@ func NewInbox(db *sqlx.DB) (*Inbox, error) {
 }
 
 func (i *Inbox) Add(e *model.Event) (err error) {
-	_, err = i.db.NamedExec(`INSERT INTO inbox (id, created_at, processed, type, payload) VALUES (:id, :created_at, :processed, :type, :payload)`, e)
+	_, err = i.db.NamedExec(addQuery, e)
 
 	return
 }
 func (i *Inbox) Get() (event *model.Event, err error) {
 	event = &model.Event{}
-	err = i.db.Get(event, `SELECT * FROM inbox WHERE processed = false LIMIT 1`)
+	err = i.db.Get(event, getQuery)
 	return
 }
 
-func (i *Inbox) CompleteWith(trx trx.Trx, event *model.Event) (err error) {
-	tx, ok := trx.(*sqlx.Tx)
+func (i *Inbox) CompleteWith(t trx.Transaction, event *model.Event) (err error) {
+	tx, ok := t.(*sqlx.Tx)
 
 	if !ok {
-		return fmt.Errorf(`trx is not a sqlx.Tx`)
+		return trx.SqlxError
 	}
 
-	_, err = tx.NamedExec(`UPDATE inbox SET processed = true WHERE id = :id`, event)
+	_, err = tx.NamedExec(completeQuery, event)
 	return
 }

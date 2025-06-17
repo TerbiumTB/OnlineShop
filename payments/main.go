@@ -23,7 +23,7 @@ import (
 // @version 1.0
 
 // @host localhost:8081
-// @BasePath /
+// @BasePath /payment/
 func main() {
 	lg := log.New(os.Stdout, "Payments ", log.LstdFlags)
 
@@ -57,29 +57,24 @@ func main() {
 
 	lg.Println("starting workers...")
 	service.NewInboxWorker(broker, inbox, lg).Start(context.Background(), 2*time.Second)
+	service.NewOutboxWorker(broker, outbox, lg).Start(context.Background(), 2*time.Second)
 	service.NewPaymentWorker(accounts, inbox, outbox, manager, lg).StartPaying(context.Background(), 2*time.Second)
 
-	as := service.NewAccountService(accounts, lg)
+	s := service.NewAccountService(accounts, lg)
 
 	lg.Println("tuning server...")
 
-	h := handler.NewHandler(as, lg)
-	sm := mux.NewRouter()
+	h := handler.NewHandler(s, lg)
+	r := mux.NewRouter()
 
-	createRouter := sm.Methods(http.MethodPost).Subrouter()
-	createRouter.HandleFunc("/account/create/{user_id}", h.CreateAccount)
+	sr := r.PathPrefix("/payment/account/").Subrouter()
+	sr.Methods(http.MethodPost).Path("/create/{user_id}").HandlerFunc(h.CreateAccount)
+	sr.Methods(http.MethodGet).Path("/get/{user_id}").HandlerFunc(h.GetAccount)
+	sr.Methods(http.MethodGet).Path("/get").HandlerFunc(h.AllAccounts)
+	sr.Methods(http.MethodPatch).Path("/update/{user_id}").HandlerFunc(h.UpdateBalance)
 
-	getRouter := sm.Methods(http.MethodGet).Subrouter()
-	getRouter.HandleFunc("/account/{user_id}", h.GetAccount)
+	r.PathPrefix("/docs/").Handler(swag.WrapHandler)
 
-	allRouter := sm.Methods(http.MethodGet).Subrouter()
-	allRouter.HandleFunc("/account", h.AllAccounts)
-
-	updateRouter := sm.Methods(http.MethodPatch).Subrouter()
-	updateRouter.HandleFunc("/account/update/{user_id}", h.UpdateBalance)
-
-	sm.PathPrefix("/docs/").Handler(swag.WrapHandler)
-
-	server.StartServer(":8080", sm, lg)
+	server.StartServer(":8080", r, lg)
 
 }

@@ -41,7 +41,7 @@ type paymentStatus struct {
 
 type paymentEvent struct {
 	UserID uuid.UUID `json:"user_id" db:"user_id"`
-	Price  float64   `json:"price" db:"amount"`
+	Price  float64   `json:"price" db:"price"`
 }
 
 func (s *PaymentWorker) pay() (ok bool) {
@@ -57,38 +57,38 @@ func (s *PaymentWorker) pay() (ok bool) {
 		return false
 	}
 	payment := model.NewPayment(event.ID, pe.UserID, pe.Price)
-	s.lg.Println("Payment: ", payment)
+	//s.lg.Println("Payment: ", payment)
 
-	tr, err := s.manager.Begin()
+	t, err := s.manager.Begin()
 	if err != nil {
 		s.lg.Printf("Error begining transaction: %s", err)
 		return false
 	}
-	defer tr.Rollback()
+	defer t.Rollback()
 
 	status := &paymentStatus{payment.ID, model.SUCCESS}
 
-	err = s.accounts.PayWith(tr, payment)
+	err = s.accounts.PayWith(t, payment)
 	if err != nil {
 		status.Status = model.FAIL
-		s.lg.Println(err)
+		//s.lg.Println(err)
 	}
 
-	err = s.inbox.CompleteWith(tr, event)
+	err = s.inbox.CompleteWith(t, event)
 	if err != nil {
 		s.lg.Println(err)
 		return false
 	}
 
-	paymentEvent, _ := model.NewEventWithJson(status)
+	event, _ = model.NewEventWithJson(status)
 
-	err = s.outbox.AddWith(tr, paymentEvent)
+	err = s.outbox.AddWith(t, event)
 	if err != nil {
 		s.lg.Println(err)
 		return false
 	}
 
-	return tr.Commit() == nil
+	return t.Commit() == nil
 }
 
 func (s *PaymentWorker) StartPaying(ctx context.Context, period time.Duration) {
@@ -101,7 +101,7 @@ func (s *PaymentWorker) StartPaying(ctx context.Context, period time.Duration) {
 				return
 			case <-ticker.C:
 				if s.pay() {
-					s.lg.Println("successful payment")
+					s.lg.Println("processed payment")
 				}
 			}
 		}

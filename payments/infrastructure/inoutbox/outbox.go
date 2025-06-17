@@ -1,14 +1,13 @@
 package inoutbox
 
 import (
-	"fmt"
 	"github.com/jmoiron/sqlx"
 	"payments/infrastructure/trx"
 	"payments/models"
 )
 
 type Outboxer interface {
-	AddWith(trx.Trx, *model.Event) error
+	AddWith(trx.Transaction, *model.Event) error
 	Get() (*model.Event, error)
 	Complete(*model.Event) error
 }
@@ -36,11 +35,11 @@ func NewOutbox(db *sqlx.DB) (*Outbox, error) {
 	return &Outbox{db}, nil
 }
 
-func (o *Outbox) AddWith(trx trx.Trx, event *model.Event) (err error) {
-	tx, ok := trx.(*sqlx.Tx)
+func (o *Outbox) AddWith(t trx.Transaction, event *model.Event) (err error) {
+	tx, ok := t.(*sqlx.Tx)
 
 	if !ok {
-		return fmt.Errorf(`trx is not a sqlx.Tx`)
+		return trx.SqlxError
 	}
 	_, err = tx.NamedExec(`INSERT INTO outbox (id, created_at, processed, type, payload) VALUES (:id, :created_at, :processed, :type, :payload)`, event)
 

@@ -15,14 +15,51 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/order": {
+        "/create/{user_id}": {
+            "post": {
+                "description": "Оформляет заказ",
+                "tags": [
+                    "Order Manage"
+                ],
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID пользователя",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Детали заказа",
+                        "name": "order",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CreateOrderRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/get": {
             "get": {
                 "description": "Получить все заказы",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Инфо"
+                    "Order Info"
                 ],
                 "responses": {
                     "200": {
@@ -43,51 +80,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/order/create/{user_id}": {
-            "post": {
-                "description": "Оформляет заказ",
-                "tags": [
-                    "Загрузка"
-                ],
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "ID пользователя",
-                        "name": "user_id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Детали заказа",
-                        "name": "order",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handlers.request"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
-                    },
-                    "400": {
-                        "description": "Bad Request"
-                    },
-                    "500": {
-                        "description": "Internal Server Error"
-                    }
-                }
-            }
-        },
-        "/order/{id}": {
+        "/get/{id}": {
             "get": {
                 "description": "Получить заказ по ID",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Инфо"
+                    "Order Info"
                 ],
                 "parameters": [
                     {
@@ -116,14 +116,16 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handlers.request": {
+        "CreateOrderRequest": {
             "type": "object",
             "properties": {
                 "amount": {
-                    "type": "number"
+                    "type": "number",
+                    "example": 500
                 },
                 "descr": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "Labuba"
                 }
             }
         },
@@ -163,12 +165,14 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
-	BasePath:         "/",
+	BasePath:         "/order/",
 	Schemes:          []string{},
 	Title:            "Orders",
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {

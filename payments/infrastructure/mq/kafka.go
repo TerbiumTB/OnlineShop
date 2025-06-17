@@ -36,7 +36,6 @@ func NewKafka() *Kafka {
 		MaxBytes: 10e6,
 	})
 
-	//r := kafka.NewReader(kafka.ReaderConfig{Brokers: []string{kafkaURL}})
 	return &Kafka{w, r, kafka.Message{}}
 }
 
@@ -59,7 +58,7 @@ func (k *Kafka) Send(e *model.Event) (err error) {
 func (k *Kafka) Receive() (e *model.Event, err error) {
 
 	k.m, err = k.r.FetchMessage(context.Background())
-	//k.r.FetchMessage()
+
 	if err != nil {
 		return nil, err
 	}

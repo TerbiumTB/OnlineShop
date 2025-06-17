@@ -6,24 +6,24 @@ import (
 	"orders/pkg/json"
 )
 
-type request struct {
-	Amount float64 `json:"amount"`
-	Descr  string  `json:"descr"`
-}
+type createReq struct {
+	Amount float64 `json:"amount" example:"500.00"`
+	Descr  string  `json:"descr" example:"Labuba"`
+} //@name CreateOrderRequest
 
-// @Title CreateOrder
+// @Title Create Order
 // @Description Оформляет заказ
-// @Tags Загрузка
+// @Tags Order Manage
 // @Param   user_id  path  string  true  "ID пользователя"
-// @Param   order     body  request true  "Детали заказа"
+// @Param   order     body  createReq true  "Детали заказа"
 // @Success 200
 // @Failure 400
 // @Failure 500
-// @Router  /order/create/{user_id} [post]
+// @Router  /create/{user_id} [post]
 func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	userID := mux.Vars(r)["user_id"]
-	h.l.Printf("Handling create order request for user %s", userID)
-	req := &request{}
+
+	req := &createReq{}
 	err := json.FromJSON(req, r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -37,5 +37,4 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
 }

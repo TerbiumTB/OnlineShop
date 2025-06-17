@@ -1,10 +1,12 @@
-basePath: /
+basePath: /order/
 definitions:
-  handlers.request:
+  CreateOrderRequest:
     properties:
       amount:
+        example: 500
         type: number
       descr:
+        example: Labuba
         type: string
     type: object
   model.Order:
@@ -32,7 +34,31 @@ info:
   title: Orders
   version: "1.0"
 paths:
-  /order:
+  /create/{user_id}:
+    post:
+      description: Оформляет заказ
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: user_id
+        required: true
+        type: string
+      - description: Детали заказа
+        in: body
+        name: order
+        required: true
+        schema:
+          $ref: '#/definitions/CreateOrderRequest'
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      tags:
+      - Order Manage
+  /get:
     get:
       description: Получить все заказы
       produces:
@@ -49,8 +75,8 @@ paths:
           schema:
             type: string
       tags:
-      - Инфо
-  /order/{id}:
+      - Order Info
+  /get/{id}:
     get:
       description: Получить заказ по ID
       parameters:
@@ -71,29 +97,5 @@ paths:
           schema:
             type: string
       tags:
-      - Инфо
-  /order/create/{user_id}:
-    post:
-      description: Оформляет заказ
-      parameters:
-      - description: ID пользователя
-        in: path
-        name: user_id
-        required: true
-        type: string
-      - description: Детали заказа
-        in: body
-        name: order
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.request'
-      responses:
-        "200":
-          description: OK
-        "400":
-          description: Bad Request
-        "500":
-          description: Internal Server Error
-      tags:
-      - Загрузка
+      - Order Info
 swagger: "2.0"

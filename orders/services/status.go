@@ -22,7 +22,7 @@ func NewStatusWorker(broker mq.Broker, orders storage.OrdersStorer, lg *log.Logg
 }
 
 type statusEvent struct {
-	UserID uuid.UUID    `json:"user_id" db:"user_id"`
+	ID     uuid.UUID    `json:"id" db:"id"`
 	Status model.Status `json:"status" db:"status"`
 }
 
@@ -34,16 +34,22 @@ func (w *StatusWorker) try() bool {
 	}
 	status := &statusEvent{}
 	err = json.Unmarshal(event.Payload, status)
+
 	if err != nil {
 		return false
 	}
+	w.lg.Printf("Event received: %+v", status)
 
-	err = w.orders.UpdateStatus(status.UserID, status.Status)
-	return err == nil
+	err = w.orders.UpdateStatus(status.ID, status.Status)
+	if err != nil {
+		return false
+	}
+	return w.broker.Register() == nil
 }
 
 func (w *StatusWorker) Start(ctx context.Context, period time.Duration) {
 	ticker := time.NewTicker(period)
+	log.Println("starting status worker")
 
 	go func() {
 		for {
@@ -53,6 +59,8 @@ func (w *StatusWorker) Start(ctx context.Context, period time.Duration) {
 			case <-ticker.C:
 				if w.try() {
 					w.lg.Println("updated status")
+				} else {
+					w.lg.Println("failed to update status")
 				}
 			}
 		}

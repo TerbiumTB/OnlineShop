@@ -8,10 +8,10 @@ type Account struct {
 	Balance  float64   `json:"balance" db:"balance"`
 }
 
-func NewAccount(userID uuid.UUID, fullname string, amount float64) *Account {
+func NewAccount(userID uuid.UUID, fullname string, balance float64) *Account {
 	return &Account{
 		UserID:   userID,
 		FullName: fullname,
-		Balance:  amount,
+		Balance:  balance,
 	}
 }

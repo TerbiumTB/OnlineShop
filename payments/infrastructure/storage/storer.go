@@ -11,5 +11,5 @@ type AccountStorer interface {
 	Get(uuid.UUID) (*model.Account, error)
 	All() ([]*model.Account, error)
 	Update(id uuid.UUID, amount float64) (err error)
-	PayWith(trx.Trx, *model.Payment) error
+	PayWith(trx.Transaction, *model.Payment) error
 }

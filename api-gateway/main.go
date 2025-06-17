@@ -11,10 +11,9 @@ import (
 
 func main() {
 	lg := log.New(os.Stdout, "API gateway ", log.LstdFlags)
-	sm := mux.NewRouter()
-	sm.PathPrefix("/order/").Handler(handlers.NewOrdersHandler())
+	r := mux.NewRouter()
+	r.PathPrefix("/order/").Handler(handlers.NewOrdersHandler())
+	r.PathPrefix("/payment/").Handler(handlers.NewPaymentsHandler())
 
-	server.StartServer(":8000", sm, lg)
-	//uploadRouter := sm.Methods(http.MethodPost).Subrouter()
-	//uploadRouter.HandleFunc("/upload/{filename}", handlers.StorageHandler())
+	server.StartServer(":8000", r, lg)
 }

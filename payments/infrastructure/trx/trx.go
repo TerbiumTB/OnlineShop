@@ -1,14 +1,19 @@
 package trx
 
-import "github.com/jmoiron/sqlx"
+import (
+	"errors"
+	"github.com/jmoiron/sqlx"
+)
 
-type Trx interface {
+var SqlxError = errors.New("transaction is not a sqlx.Tx object")
+
+type Transaction interface {
 	Commit() error
 	Rollback() error
 }
 
 type Manager interface {
-	Begin() (Trx, error)
+	Begin() (Transaction, error)
 }
 
 type ManagerDB struct {
@@ -19,6 +24,6 @@ func NewDBManager(db *sqlx.DB) *ManagerDB {
 	return &ManagerDB{db: db}
 }
 
-func (m *ManagerDB) Begin() (Trx, error) {
+func (m *ManagerDB) Begin() (Transaction, error) {
 	return m.db.Beginx()
 }

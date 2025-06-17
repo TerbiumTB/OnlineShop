@@ -18,18 +18,20 @@ func NewOutboxWorker(broker mq.Broker, outbox inoutbox.Outboxer, lg *log.Logger)
 	return &OutboxWorker{broker: broker, outbox: outbox, lg: lg}
 }
 
-func (w *OutboxWorker) try() (ok bool) {
+func (w *OutboxWorker) try() error {
 	e, err := w.outbox.Get()
-	if err != nil {
-		return false
+	if err != nil || e == nil {
+		//w.lg.Printf("Couldn't get event: %v", err)
+		return err
 	}
 
 	err = w.broker.Send(e)
 	if err != nil {
-		return false
+		//w.lg.Printf("Couldn't send event: %v", err)
+		return err
 	}
 	_ = w.outbox.Complete(e)
-	return true
+	return nil
 }
 
 func (w *OutboxWorker) Start(ctx context.Context, handlePeriod time.Duration) {
@@ -41,7 +43,11 @@ func (w *OutboxWorker) Start(ctx context.Context, handlePeriod time.Duration) {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				if w.try() {
+				err := w.try()
+
+				if err != nil {
+					//w.lg.Printf("Outbox worker error: %s", err)
+				} else {
 					w.lg.Printf("Event completed successfully")
 				}
 			}

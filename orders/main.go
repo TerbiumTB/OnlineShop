@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/gorilla/mux"
 	swag "github.com/swaggo/http-swagger"
+	"log"
 	"net/http"
 	_ "orders/docs"
 	"orders/handlers"
@@ -14,17 +15,15 @@ import (
 	"orders/pkg/postgres"
 	"orders/pkg/server"
 	"orders/services"
-	"time"
-	//"github.com/gorilla/mux"
-	"log"
 	"os"
+	"time"
 )
 
 // @title Orders
 // @version 1.0
 
 // @host localhost:8080
-// @BasePath /
+// @BasePath /order/
 func main() {
 	lg := log.New(os.Stdout, "Orders ", log.LstdFlags)
 
@@ -50,18 +49,15 @@ func main() {
 	s := service.NewOrderService(orders, outbox, trxManager)
 
 	h := handlers.NewHandler(s, lg)
-	sm := mux.NewRouter()
+	r := mux.NewRouter()
 
-	createRouter := sm.Methods(http.MethodPost).Subrouter()
-	createRouter.HandleFunc("/order/create/{user_id}", h.CreateOrder)
+	sr := r.PathPrefix("/order/").Subrouter()
 
-	getRouter := sm.Methods(http.MethodGet).Subrouter()
-	getRouter.HandleFunc("/order/{id}", h.GetOrder)
+	sr.Methods(http.MethodPost).Path("/create/{user_id}").HandlerFunc(h.CreateOrder)
+	sr.Methods(http.MethodGet).Path("/get/{id}").HandlerFunc(h.GetOrder)
+	sr.Methods(http.MethodGet).Path("/get").HandlerFunc(h.AllOrders)
 
-	allRouter := sm.Methods(http.MethodGet).Subrouter()
-	allRouter.HandleFunc("/order", h.AllOrders)
+	r.PathPrefix("/docs/").Handler(swag.WrapHandler)
 
-	sm.PathPrefix("/docs/").Handler(swag.WrapHandler)
-
-	server.StartServer(":8080", sm, lg)
+	server.StartServer(":8080", r, lg)
 }
